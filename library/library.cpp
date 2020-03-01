@@ -83,7 +83,7 @@ int checkout(int bookid, int patronid) {
 	books[bookid].state = book_checkout_state::OUT;
 	patrons[patronid].number_books_checked_out = patrons[patronid].number_books_checked_out + 1;
 
-	saveBooks(books, BOOKFILE.cstr());
+	saveBooks(books, BOOKFILE.c_str());
 	savePatrons(patrons, PATRONFILE.c_str());
 
 	return SUCCESS;
@@ -146,7 +146,7 @@ int enroll(std::string &name) {
 
 	reloadAllData();
 	patron p;
-	p.name = name;
+	p.name = &name;
 	p.number_books_checked_out = 0;
 	p.patron_id = patrons.size();
 	patrons.push_back(p);
@@ -163,7 +163,7 @@ int enroll(std::string &name) {
  */
 int numbBooks() {
 	reloadAllData();
-	return boos.size();
+	return books.size();
 }
 
 /*
@@ -184,12 +184,10 @@ int howmanybooksdoesPatronHaveCheckedOut(int patronid) {
 
 	reloadAllData();
 
-	int i = 0;
-	while (i < patrons.size()) {
-		if (patronid == patrons[i].patron_id) {
-			return patrons[count].number_books_checked_out;
+	for (int i = 0; i < patrons.size(); i++) {
+		if (patrons[i].patron_id == patronid) {
+			return patrons[i].number_books_checked_out;
 		}
-		i++;
 	}
 	return PATRON_NOT_ENROLLED;
 }
@@ -207,7 +205,7 @@ int whatIsPatronName(std::string &name,int patronid) {
 	int i = 0;
 	while (i < patrons.size()) {
 		if (patrons[i].patron_id == patronid) {
-			name = patrons[i].name;
+			&name = patrons[i].name;
 			return SUCCESS;
 		}
 		i++;
