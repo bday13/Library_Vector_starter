@@ -13,11 +13,19 @@ using namespace std;
 //NOTE: also make sure you save patron and book data to disk any time you make a change to them
 //NOTE: for files where data is stored see constants.h BOOKFILE and PATRONFILE
 
+vector<book> books;
+vector<patron> patrons;
+
 /*
  * clear books and patrons containers
  * then reload them from disk 
  */
 void reloadAllData(){
+
+	books.clear();
+	patrons.clear();
+	loadBooks(books, BOOKFILE.c_str());
+	loadPatrons(patrons, PATRONFILE.c_str());
 
 }
 
@@ -41,7 +49,43 @@ void reloadAllData(){
  * 		   BOOK_NOT_IN_COLLECTION
  *         TOO_MANY_OUT patron has the max number of books allowed checked out
  */
-int checkout(int bookid, int patronid){
+int checkout(int bookid, int patronid) {
+
+	reloadAllData();
+
+	bool book = false;
+	for (int i = 0; i < books.size(); i++) {
+		if (books[i].book_id == bookid) {
+			book = true;
+		}
+	}
+
+	if (book == false) {
+		return BOOK_NOT_IN_COLLECTION;
+	}
+
+	bool patron = false;
+	for (int i = 0; i < patrons.size(); i++) {
+		if (patrons[i].patron_id == patronid) {
+			patrons = true;
+		}
+	}
+
+	if (patron == false) {
+		return PATRON_NOT_ENROLLED;
+	}
+
+	if (patrons[patronid].number_books_checked_out > MAX_BOOKS_ALLOWED_OUT) {
+		return TOO_MANY_OUT;
+	}
+
+	books[bookid].loaned_to_patron_id = patronid;
+	books[bookid].state = book_checkout_state::OUT;
+	patrons[patronid].number_books_checked_out = patrons[patronid].number_books_checked_out + 1;
+
+	saveBooks(books, BOOKFILE.cstr());
+	savePatrons(patrons, PATRONFILE.c_str());
+
 	return SUCCESS;
 }
 
@@ -57,7 +101,35 @@ int checkout(int bookid, int patronid){
  * returns SUCCESS checkout worked
  * 		   BOOK_NOT_IN_COLLECTION
  */
-int checkin(int bookid){
+int checkin(int bookid) {
+
+	reloadAllData();
+	bool checked = false;
+
+	for (int i = 0; i < books.size(); i++) {
+		if (books[i].book_id == bookid) {
+			checked = true;
+			break;
+		}
+	}
+
+	if (!checked) {
+		return BOOK_NOT_IN_COLLECTION;
+	}
+
+	for (int i = 0; i < patrons.size(); i++) {
+		if (books[i].loaned_to_patron_id == patrons[i].patron_id) {
+			patrons[i].umber_books_checked_out--;
+			break;
+		}
+	}
+
+	books[bookid].loaned_to_patron_id = NO_ONE;
+	books[bookid].state = IN;
+
+	saveBooks(books,BOOKFILE.c_str());
+	savePatrons(patrons, PATRONFILE.c_str());
+
 	return SUCCESS;
 }
 
@@ -70,8 +142,18 @@ int checkin(int bookid){
  * return 
  *    the patron_id of the person added
  */
-int enroll(std::string &name){
-	return 0;
+int enroll(std::string &name) {
+
+	reloadAllData();
+	patron p;
+	p.name = name;
+	p.number_books_checked_out = 0;
+	p.patron_id = patrons.size();
+	patrons.push_back(p);
+
+	savePatrons(patrons, PATRONFILE.c_str());
+
+	return p.patron_id;
 }
 
 /*
@@ -79,16 +161,18 @@ int enroll(std::string &name){
  * (ie. if 3 books returns 3)
  * 
  */
-int numbBooks(){
-	return 0;
+int numbBooks() {
+	reloadAllData();
+	return boos.size();
 }
 
 /*
  * the number of patrons in the patrons container
  * (ie. if 3 patrons returns 3)
  */
-int numbPatrons(){
-	return 0;
+int numbPatrons() {
+	reloadAllData();
+	return patrons.size();
 }
 
 /*the number of books patron has checked out
@@ -96,8 +180,18 @@ int numbPatrons(){
  *returns a positive number indicating how many books are checked out 
  *        or PATRON_NOT_ENROLLED         
  */
-int howmanybooksdoesPatronHaveCheckedOut(int patronid){
-	return 0;
+int howmanybooksdoesPatronHaveCheckedOut(int patronid) {
+
+	reloadAllData();
+
+	int i = 0;
+	while (i < patrons.size()) {
+		if (patronid == patrons[i].patron_id) {
+			return patrons[count].number_books_checked_out;
+		}
+		i++;
+	}
+	return PATRON_NOT_ENROLLED;
 }
 
 /* search through patrons container to see if patronid is there
@@ -106,7 +200,19 @@ int howmanybooksdoesPatronHaveCheckedOut(int patronid){
  * returns SUCCESS found it and name in name
  *         PATRON_NOT_ENROLLED no patron with this patronid
  */
-int whatIsPatronName(std::string &name,int patronid){
-	return SUCCESS;
+int whatIsPatronName(std::string &name,int patronid) {
+
+	reloadAllData();
+
+	int i = 0;
+	while (i < patrons.size()) {
+		if (patrons[i].patron_id == patronid) {
+			name = patrons[i].name;
+			return SUCCESS;
+		}
+		i++;
+	}
+
+	return PATRON_NOT_ENROLLED;
 }
 
